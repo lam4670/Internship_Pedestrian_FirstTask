@@ -1,0 +1,365 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Pedestrian Dashboard (AGOL)</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;500;700&display=swap" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.js"></script>
+
+  <style>
+    :root{
+      --coral-500:#FF6B57;
+      --coral-600:#E0483D;
+      --teal-500:#007A74;
+      --muted:#5B6770;
+      --panel:#FFFFFF;
+      --bg:#F7FAFA;
+      --text:#06202A;
+    }
+    html{font-size:15px}
+    html,body{height:100%}
+    body{
+      font-family:Inter,Segoe UI,Arial,sans-serif;
+      margin:0;
+      background:var(--bg);
+      color:var(--text);
+      line-height:1.5;
+      -webkit-font-smoothing:antialiased;
+      -moz-osx-font-smoothing:grayscale;
+    }
+    .wrap{
+      max-width:1160px;
+      margin:34px auto;
+      padding:28px;
+      background:var(--panel);
+      border-radius:14px;
+      box-shadow:0 10px 30px rgba(6,32,42,0.06);
+      border:1px solid rgba(6,32,42,0.04);
+      position:relative;
+      overflow:hidden;
+    }
+    .accent-bar{height:8px;width:100%;border-radius:8px 8px 0 0;margin:-28px -28px 18px -28px;background:linear-gradient(90deg,var(--coral-500),var(--teal-500))}
+    .title{display:flex;align-items:center;justify-content:space-between;gap:16px;padding-bottom:6px;border-bottom:1px solid rgba(11,20,34,0.04)}
+    h1{font-size:24px;margin:0;color:var(--coral-600);font-weight:800;letter-spacing:0.2px;font-family:Inter, system-ui, -apple-system}
+    p.lead{margin:6px 0 0;color:var(--muted);font-size:14px;font-weight:500}
+    .city-badge{display:inline-block;margin-top:8px;font-size:12px;padding:6px 10px;border-radius:999px;border:1px solid rgba(6,32,42,0.04);color:var(--teal-500);font-weight:700}
+    .controls{display:flex;flex-wrap:wrap;gap:12px;align-items:center;margin:18px 0}
+    input[type=search], input[type=text]{
+      padding:10px 12px;border-radius:10px;border:1px solid rgba(6,32,42,0.06);
+      min-width:240px;font-size:14px;background:linear-gradient(180deg,#ffffff,#fbfdff)
+    }
+    button{
+      background:linear-gradient(90deg,var(--coral-500),var(--coral-600));
+      color:white;border:none;padding:10px 14px;border-radius:10px;cursor:pointer;font-weight:700;font-size:14px;
+      box-shadow:0 6px 18px rgba(224,72,61,0.12);transition:transform 160ms ease,box-shadow 160ms ease
+    }
+    button:hover{transform:translateY(-1px)}
+    button.secondary{background:#fff;color:var(--coral-600);border:1px solid rgba(6,32,42,0.06);box-shadow:none}
+    .grid{display:grid;grid-template-columns:1fr 420px;gap:20px;align-items:stretch;margin-top:6px}
+    .table-wrapper{height:520px;overflow:auto;border-radius:10px;border:1px solid rgba(6,32,42,0.04);padding:8px;background:linear-gradient(180deg,#fff,#fcfcfd)}
+    table{width:100%;border-collapse:collapse;font-size:14px}
+    th,td{padding:12px 14px;text-align:left;border-bottom:1px solid rgba(6,32,42,0.03)}
+    tr:nth-child(even){background:rgba(6,32,42,0.02)}
+    tr:hover{background:rgba(255,107,87,0.04)}
+    th{font-size:13px;font-weight:700;letter-spacing:0.02em}
+    td{font-weight:500;color:var(--text)}
+    .pill{display:inline-block;padding:6px 12px;border-radius:999px;font-weight:800;color:#fff;
+      background:linear-gradient(90deg,var(--coral-500),var(--coral-600));
+      box-shadow:0 6px 14px rgba(224,72,61,0.08);font-size:13px
+    }
+    thead th{background:linear-gradient(90deg,var(--coral-500),var(--teal-500));color:#fff;position:sticky;top:0;font-weight:700}
+    thead th{box-shadow: inset 0 -8px 18px rgba(6,32,42,0.03)}
+    .chart-card{background:linear-gradient(180deg,#fff,#fcfcfd);padding:16px;border-radius:10px;border:1px solid rgba(11,20,34,0.04);
+      box-shadow:0 8px 24px rgba(6,32,42,0.03);height:520px;display:flex;flex-direction:column}
+    .small{font-size:13px;color:var(--muted)}
+    .metrics{display:flex;gap:14px;margin-top:6px;margin-bottom:8px}
+    .metric-card{background:linear-gradient(180deg,#fff,#fbfbfb);padding:14px;border-radius:10px;border:1px solid rgba(11,20,34,0.04);
+      box-shadow:0 6px 18px rgba(6,32,42,0.03);min-width:160px;display:flex;flex-direction:column}
+    .metric-card .num{font-size:22px;font-weight:800;color:var(--teal-500)}
+    .metric-card .lbl{font-size:12px;color:var(--muted);margin-top:8px}
+    @media(max-width:920px){.grid{grid-template-columns:1fr}}
+  </style>
+</head>
+
+<body>
+  <div class="wrap">
+    <div class="accent-bar" aria-hidden="true"></div>
+    <div class="title">
+      <div>
+        <h1>Pedestrian Count Dashboard</h1>
+        <div style="display:flex;gap:8px;align-items:center;margin-top:6px">
+          <div class="city-badge">Coral Gables</div>
+          <div class="small">ArcGIS Online Hosted Layer</div>
+        </div>
+        <p class="lead">Loads data directly from an ArcGIS Online Hosted Feature Layer/Table using the REST query API.</p>
+      </div>
+      <div class="small">Data source: ArcGIS Online</div>
+    </div>
+
+    <div class="controls">
+      <input id="layerUrlInput" type="text" placeholder="Paste FeatureServer layer URL (…/FeatureServer/0)" />
+      <button id="loadAgolBtn">Load from AGOL</button>
+
+      <input id="searchInput" type="search" placeholder="Filter (search)" />
+      <button id="clearBtn" class="secondary">Clear</button>
+
+      <div style="margin-left:auto" id="status" class="small"></div>
+    </div>
+
+    <div class="metrics" id="metricsRow" aria-hidden="true" style="display:none">
+      <div class="metric-card">
+        <div class="num" id="metricTotal">0</div>
+        <div class="lbl">Total Pedestrians</div>
+      </div>
+      <div class="metric-card">
+        <div class="num" id="metricLocations">0</div>
+        <div class="lbl">Locations</div>
+      </div>
+    </div>
+
+    <div class="grid">
+      <div>
+        <div class="table-wrapper" id="tableContainer">
+          <table id="dataTable">
+            <thead><tr id="tableHead"></tr></thead>
+            <tbody id="tableBody"></tbody>
+          </table>
+        </div>
+      </div>
+      <div>
+        <div class="chart-card">
+          <div style="font-weight:600;margin-bottom:8px">Top Pedestrian Locations</div>
+          <canvas id="topPedCanvas" style="width:100%;height:100%"></canvas>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // ============
+    // 1) Paste your layer URL in the box above, e.g.
+    // https://servicesX.arcgis.com/XXXXX/arcgis/rest/services/YOUR_SERVICE/FeatureServer/0
+    //
+    // 2) If your layer is NOT public, you'll need OAuth (recommended).
+    // ============
+    // Token input removed; use OAuth for private layers.
+
+    let allRows = [];
+    let chart;
+
+    function setStatus(s){ document.getElementById("status").textContent = s; }
+
+    function prettifyHeader(h){
+      return (h || "").toString().replace(/[_\-]/g," ").replace(/\b(\w)/g, s=>s.toUpperCase());
+    }
+
+    function renderTable(rows){
+      const head = document.getElementById("tableHead");
+      const body = document.getElementById("tableBody");
+      head.innerHTML = "";
+      body.innerHTML = "";
+      if(!rows || rows.length === 0) return;
+
+      const cols = Object.keys(rows[0]);
+      const pedKey = cols.find(k => k.toLowerCase().includes("pedestrian")) || cols.find(k => /ped/i.test(k));
+
+      cols.forEach(c => {
+        const th = document.createElement("th");
+        th.textContent = prettifyHeader(c);
+        head.appendChild(th);
+      });
+
+      rows.forEach(r => {
+        const tr = document.createElement("tr");
+        cols.forEach(c => {
+          const td = document.createElement("td");
+          const val = (r[c] !== null && r[c] !== undefined) ? r[c] : "";
+          if(pedKey && c === pedKey){
+            const n = Number(val) || 0;
+            td.innerHTML = `<span class="pill">${n.toLocaleString()}</span>`;
+          } else {
+            td.textContent = String(val);
+          }
+          tr.appendChild(td);
+        });
+        body.appendChild(tr);
+      });
+    }
+
+    function updateChart(rows){
+      if(!rows || rows.length === 0) { if(chart){ chart.destroy(); chart=null; } return; }
+
+      const keys = Object.keys(rows[0]);
+      const pedKey = keys.find(k => k.toLowerCase().includes("pedestrian")) || keys.find(k => /ped/i.test(k));
+      const labelKey = keys.find(k => /label|name|location/i.test(k)) || keys[0];
+
+      const agg = {};
+      rows.forEach(r => {
+        const lbl = r[labelKey] || "Unknown";
+        const val = Number(r[pedKey]) || 0;
+        agg[lbl] = (agg[lbl] || 0) + val;
+      });
+
+      const pairs = Object.entries(agg).sort((a,b)=>b[1]-a[1]).slice(0,10);
+      const labels = pairs.map(p=>p[0]);
+      const values = pairs.map(p=>p[1]);
+
+      const canvas = document.getElementById("topPedCanvas");
+      const ctx = canvas.getContext("2d");
+      if(chart) chart.destroy();
+
+      const grad = ctx.createLinearGradient(0, 0, canvas.width, 0);
+      grad.addColorStop(0, "rgba(255,107,87,0.98)");
+      grad.addColorStop(1, "rgba(27,155,143,0.96)");
+
+      const valueLabels = {
+        id: "valueLabels",
+        afterDatasetsDraw(chartInstance) {
+          const {ctx} = chartInstance;
+          ctx.save();
+          chartInstance.data.datasets.forEach((dataset, datasetIndex) => {
+            const meta = chartInstance.getDatasetMeta(datasetIndex);
+            meta.data.forEach((bar, index) => {
+              const val = dataset.data[index];
+              const x = bar.x + 10;
+              const y = bar.y;
+              ctx.fillStyle = "rgba(34,20,20,0.9)";
+              ctx.font = "700 13px Inter, sans-serif";
+              ctx.textBaseline = "middle";
+              ctx.fillText((Number(val) || 0).toLocaleString(), x, y);
+            });
+          });
+          ctx.restore();
+        }
+      };
+
+      chart = new Chart(ctx, {
+        type: "bar",
+        data: { labels, datasets: [{ label:"Pedestrians", data: values, backgroundColor: grad, borderRadius: 12, barThickness: 18, borderSkipped: false }] },
+        options: {
+          indexAxis: "y",
+          responsive: true,
+          maintainAspectRatio: false,
+          layout: { padding: { top: 8, right: 16, bottom: 8, left: 8 } },
+          scales: {
+            x: { beginAtZero: true, grid: { color: "rgba(15,23,42,0.06)" }, ticks: { color: "#334155", precision:0 } },
+            y: { grid: { display:false }, ticks: { color: "#0f172a", autoSkip:false, maxTicksLimit:10 } }
+          },
+          plugins: {
+            legend: { display:false },
+            tooltip: {
+              backgroundColor:"#fff", titleColor:"#071123", bodyColor:"#071123",
+              borderColor:"rgba(11,20,34,0.06)", borderWidth:1,
+              callbacks: { label: (ctx) => `${ctx.dataset.label}: ${Number(ctx.parsed.x || ctx.parsed).toLocaleString()}` }
+            }
+          },
+          animation: { duration: 900, easing: "cubicBezier(.16,.84,.24,1)" }
+        },
+        plugins: [valueLabels]
+      });
+
+      try{
+        const total = values.reduce((s,v)=>s+Number(v||0),0);
+        document.getElementById("metricTotal").textContent = total.toLocaleString();
+        document.getElementById("metricLocations").textContent = labels.length.toLocaleString();
+        document.getElementById("metricsRow").style.display = labels.length ? "flex" : "none";
+      }catch(e){}
+    }
+
+    async function queryAllFeatures(layerUrl){
+      // Build .../query endpoint
+      const base = layerUrl.replace(/\/?$/, "");
+      const queryUrl = base.endsWith("/query") ? base : (base + "/query");
+
+      // Pagination: many services cap records per request (maxRecordCount).
+      const pageSize = 2000;
+      let offset = 0;
+      let out = [];
+
+      while(true){
+        const params = new URLSearchParams({
+          where: "1=1",
+          outFields: "*",
+          f: "json",
+          returnGeometry: "false",
+          resultRecordCount: String(pageSize),
+          resultOffset: String(offset)
+        });
+
+        // No token parameter added; private layers require OAuth.
+
+        const resp = await fetch(queryUrl + "?" + params.toString(), { mode: "cors" });
+        if(!resp.ok){
+          throw new Error("HTTP " + resp.status + " " + resp.statusText);
+        }
+        const json = await resp.json();
+
+        if(json.error){
+          throw new Error((json.error.message || "Query error") + (json.error.details ? (": " + json.error.details.join(" | ")) : ""));
+        }
+
+        const feats = (json.features || []);
+        out.push(...feats.map(f => f.attributes || {}));
+
+        if(feats.length < pageSize){
+          break;
+        }
+        offset += pageSize;
+      }
+
+      return out;
+    }
+
+    async function loadFromAgol(){
+      const layerUrl = (document.getElementById("layerUrlInput").value || "").trim();
+      if(!layerUrl){
+        setStatus("Paste a FeatureServer layer URL first.");
+        return;
+      }
+      setStatus("Querying AGOL…");
+      try{
+        const rows = await queryAllFeatures(layerUrl);
+        allRows = rows;
+        setStatus(rows.length.toLocaleString() + " rows loaded");
+        renderTable(allRows);
+        updateChart(allRows);
+      }catch(err){
+        setStatus("Load failed: " + err.message);
+      }
+    }
+
+    document.getElementById("loadAgolBtn").addEventListener("click", loadFromAgol);
+
+    document.getElementById("searchInput").addEventListener("input", (e)=>{
+      const q = (e.target.value || "").trim().toLowerCase();
+      if(!allRows || allRows.length === 0){ renderTable([]); updateChart([]); return; }
+      if(!q){ renderTable(allRows); updateChart(allRows); return; }
+
+      const filtered = allRows.filter(r =>
+        Object.values(r).some(v => (String(v).toLowerCase().includes(q)))
+      );
+
+      renderTable(filtered);
+      updateChart(filtered);
+    });
+
+    document.getElementById("clearBtn").addEventListener("click", ()=>{
+      allRows = [];
+      renderTable([]);
+      updateChart([]);
+      setStatus("Cleared");
+      document.getElementById("searchInput").value = "";
+    });
+  </script>
+
+  <style>
+    @media(max-width:920px){
+      .table-wrapper,.chart-card{height:auto}
+      #topPedCanvas{height:320px !important}
+    }
+  </style>
+</body>
+</html>
