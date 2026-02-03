@@ -89,7 +89,7 @@
     <div class="accent-bar" aria-hidden="true"></div>
     <div class="title">
       <div>
-        <h1>Pedestrian Count Dashboard</h1>
+        <h1>Pedestrian Dashboard</h1>
         <div style="display:flex;gap:8px;align-items:center;margin-top:6px">
           <div class="city-badge">Coral Gables</div>
           <div class="small">ArcGIS Online Hosted Layer</div>
@@ -100,8 +100,7 @@
     </div>
 
     <div class="controls">
-      <input id="layerUrlInput" type="text" placeholder="Paste FeatureServer layer URL (…/FeatureServer/0)" />
-      <button id="loadAgolBtn">Load from AGOL</button>
+      <a id="layerLink" href="https://services1.arcgis.com/ug7Y0GY6kYE0tf0p/arcgis/rest/services/DataSensor2/FeatureServer/0" target="_blank" rel="noopener" style="padding:10px 12px;border-radius:10px;border:1px solid rgba(6,32,42,0.06);min-width:240px;text-decoration:none;color:var(--teal-500);background:linear-gradient(180deg,#fff,#fbfdff);">AGOL Layer</a>
 
       <input id="searchInput" type="search" placeholder="Filter (search)" />
       <button id="clearBtn" class="secondary">Clear</button>
@@ -149,6 +148,8 @@
 
     let allRows = [];
     let chart;
+
+    const DEFAULT_LAYER_URL = "https://services1.arcgis.com/ug7Y0GY6kYE0tf0p/arcgis/rest/services/DataSensor2/FeatureServer/0";
 
     function setStatus(s){ document.getElementById("status").textContent = s; }
 
@@ -271,7 +272,7 @@
 
     async function queryAllFeatures(layerUrl){
       // Build .../query endpoint
-      const base = layerUrl.replace(/\/?$/, "");
+      const base = layerUrl.replace(/\/?$/, ""); 
       const queryUrl = base.endsWith("/query") ? base : (base + "/query");
 
       // Pagination: many services cap records per request (maxRecordCount).
@@ -314,7 +315,8 @@
     }
 
     async function loadFromAgol(){
-      const layerUrl = (document.getElementById("layerUrlInput").value || "").trim();
+      const layerUrl = DEFAULT_LAYER_URL;
+
       if(!layerUrl){
         setStatus("Paste a FeatureServer layer URL first.");
         return;
@@ -331,7 +333,8 @@
       }
     }
 
-    document.getElementById("loadAgolBtn").addEventListener("click", loadFromAgol);
+    // Auto-load the configured layer on page load
+    loadFromAgol();
 
     document.getElementById("searchInput").addEventListener("input", (e)=>{
       const q = (e.target.value || "").trim().toLowerCase();
